@@ -15,7 +15,10 @@
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "prepare": "yarn build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "prepare": "husky",
     "prepublishOnly": "yarn clean && yarn build"
   },
   "repository": {
@@ -34,7 +37,19 @@
     "axios": "^1.7.7"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.7.5",
+    "husky": "^9.1.7",
+    "jest": "29",
+    "lint-staged": "^16.2.6",
+    "nock": "^14.0.10",
+    "ts-jest": "29",
     "typescript": "^5.6.3"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "yarn typecheck",
+      "yarn test --bail --findRelatedTests"
+    ]
   }
 }

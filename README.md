@@ -88,7 +88,42 @@ Errors throw `APIError` with `status`, `data`, and `headers` from the HTTP respo
 # install deps
 yarn
 
-# type-check and build to dist/
+# run tests
+yarn test
+
+# run tests in watch mode
+yarn test:watch
+
+# run tests with coverage
+yarn test:coverage
+
+# type-check
 yarn typecheck
+
+# build to dist/
 yarn build
 ```
+
+### Pre-commit Hooks
+
+This project uses Husky and lint-staged to ensure code quality before commits:
+
+- **lint-staged**: Runs typecheck and tests on staged TypeScript files
+- **pre-commit hook**: Runs the full test suite, type checking, and build
+
+The pre-commit hook will automatically run when you commit changes. If any check fails, the commit will be blocked until the issues are fixed.
+
+To bypass the pre-commit hook (not recommended), use:
+```bash
+git commit --no-verify
+```
+
+### Testing
+
+The project uses Jest with ts-jest for testing. Tests are located in `src/__tests__/` and cover:
+
+- **client.test.ts**: Client initialization, signature generation, session creation, error handling
+- **errors.test.ts**: APIError class functionality
+- **types.test.ts**: TypeScript type definitions and interfaces
+
+Coverage threshold is set to 80% for branches, functions, lines, and statements.

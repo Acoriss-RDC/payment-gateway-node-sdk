@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { APIError } from './errors';
 import {
   ClientConfig,
