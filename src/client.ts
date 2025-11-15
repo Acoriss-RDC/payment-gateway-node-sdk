@@ -6,6 +6,7 @@ import {
   Environment,
   PaymentSessionRequest,
   PaymentSessionResponse,
+  RetrievePaymentResponse,
   Signer,
 } from './types';
 
@@ -58,6 +59,41 @@ export class PaymentGatewayClient {
 
     try {
       const res = await this.http.post<PaymentSessionResponse>('/sessions', rawBody, {
+        headers: {
+          'X-API-KEY': this.apiKey,
+          'X-SIGNATURE': signature,
+        },
+      });
+      return res.data;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const e = err as AxiosError<any>;
+        const message = e.response?.data?.message || e.message || 'Request failed';
+        throw new APIError(message, {
+          status: e.response?.status,
+          data: e.response?.data,
+          headers: e.response?.headers as any,
+        });
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Retrieves a payment by ID.
+   * Computes X-SIGNATURE using either the provided signer or default HMAC-SHA256(secret, paymentId).
+   */
+  async getPayment(paymentId: string, opts?: { signatureOverride?: string }): Promise<RetrievePaymentResponse> {
+    const signature = opts?.signatureOverride ?? this.signer?.sign(paymentId);
+
+    if (!signature) {
+      throw new Error(
+        'No signature available. Provide apiSecret at client init, a custom signer, or pass signatureOverride.'
+      );
+    }
+
+    try {
+      const res = await this.http.get<RetrievePaymentResponse>(`/payments/${paymentId}`, {
         headers: {
           'X-API-KEY': this.apiKey,
           'X-SIGNATURE': signature,

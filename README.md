@@ -40,6 +40,22 @@ const session = await client.createSession({
 console.log('Checkout URL:', session.checkoutUrl);
 ```
 
+### Retrieve Payment Status
+
+```ts
+const payment = await client.getPayment('pay_1234567890');
+
+console.log('Payment Status:', payment.status); // 'P' | 'S' | 'C'
+console.log('Amount:', payment.amount);
+console.log('Expired:', payment.expired);
+console.log('Services:', payment.services);
+```
+
+Payment status values:
+- `'P'` - Pending: Payment is awaiting completion
+- `'S'` - Succeeded: Payment was successful
+- `'C'` - Canceled: Payment was canceled or failed
+
 ## Signature
 
 By default the SDK computes `X-SIGNATURE` as `HMAC-SHA256(JSON.stringify(body), apiSecret)` if you provide `apiSecret`.
@@ -72,7 +88,27 @@ client.createSession(payload, { signatureOverride: 'precomputed-signature' });
 
 ## API
 
-- createSession(payload: PaymentSessionRequest, opts?: { signatureOverride?: string }): Promise<PaymentSessionResponse>
+### Methods
+
+#### `createSession(payload, opts?)`
+
+Creates a new payment session.
+
+**Parameters:**
+- `payload: PaymentSessionRequest` - Session details (amount, currency, customer, etc.)
+- `opts?: { signatureOverride?: string }` - Optional signature override
+
+**Returns:** `Promise<PaymentSessionResponse>` - Session details with checkout URL
+
+#### `getPayment(paymentId, opts?)`
+
+Retrieves payment status and details by payment ID.
+
+**Parameters:**
+- `paymentId: string` - The payment ID (e.g., 'pay_1234567890')
+- `opts?: { signatureOverride?: string }` - Optional signature override
+
+**Returns:** `Promise<RetrievePaymentResponse>` - Payment details including status, services, and customer info
 
 ## Types
 

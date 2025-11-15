@@ -2,7 +2,7 @@ import nock = require('nock');
 import * as crypto from 'crypto';
 import { PaymentGatewayClient } from '../client';
 import { APIError } from '../errors';
-import { PaymentSessionRequest, PaymentSessionResponse } from '../types';
+import { PaymentSessionRequest, PaymentSessionResponse, RetrievePaymentResponse } from '../types';
 
 describe('PaymentGatewayClient', () => {
   const API_KEY = 'test-api-key';
@@ -346,6 +346,305 @@ describe('PaymentGatewayClient', () => {
       });
 
       const result = await client.createSession(payload);
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getPayment', () => {
+    it('should generate HMAC-SHA256 signature with paymentId when apiSecret is provided', async () => {
+      const paymentId = 'pay_1234567890';
+      const expectedSignature = crypto
+        .createHmac('sha256', API_SECRET)
+        .update(paymentId, 'utf8')
+        .digest('hex');
+
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: 'Payment for Order #1234',
+        transactionId: 'order_1234',
+        customer: {
+          email: 'john@example.com',
+          phone: '+1234567890',
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [
+          {
+            id: 'svc_123',
+            name: 'express_delivery',
+            description: 'Express delivery service',
+            quantity: 1,
+            price: 1500,
+            currency: 'USD',
+            sessionId: 'sess_123',
+            createdAt: '2025-11-15T10:00:00Z',
+          },
+        ],
+        status: 'S',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .matchHeader('X-API-KEY', API_KEY)
+        .matchHeader('X-SIGNATURE', expectedSignature)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.getPayment(paymentId);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.status).toBe('S');
+    });
+
+    it('should use custom signer when provided', async () => {
+      const paymentId = 'pay_1234567890';
+      const CUSTOM_SIGNATURE = 'custom-get-signature';
+      const customSigner = { sign: jest.fn(() => CUSTOM_SIGNATURE) };
+
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: null,
+        transactionId: 'order_1234',
+        customer: {
+          email: 'test@example.com',
+          phone: null,
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [],
+        status: 'P',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .matchHeader('X-SIGNATURE', CUSTOM_SIGNATURE)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, signer: customSigner });
+      await client.getPayment(paymentId);
+
+      expect(customSigner.sign).toHaveBeenCalledWith(paymentId);
+    });
+
+    it('should use signature override when provided', async () => {
+      const paymentId = 'pay_1234567890';
+      const OVERRIDE_SIGNATURE = 'override-get-signature';
+
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: null,
+        transactionId: 'order_1234',
+        customer: {
+          email: 'test@example.com',
+          phone: null,
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [],
+        status: 'P',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .matchHeader('X-SIGNATURE', OVERRIDE_SIGNATURE)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      await client.getPayment(paymentId, { signatureOverride: OVERRIDE_SIGNATURE });
+    });
+
+    it('should throw error when no signature is available', async () => {
+      const client = new PaymentGatewayClient({ apiKey: API_KEY });
+
+      await expect(client.getPayment('pay_123')).rejects.toThrow(
+        'No signature available. Provide apiSecret at client init, a custom signer, or pass signatureOverride.'
+      );
+    });
+
+    it('should successfully retrieve a pending payment', async () => {
+      const paymentId = 'pay_pending_123';
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: 'Payment for Order #1234',
+        transactionId: 'order_1234',
+        customer: {
+          email: 'john@example.com',
+          phone: '+1234567890',
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [],
+        status: 'P',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.getPayment(paymentId);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.status).toBe('P');
+      expect(result.expired).toBe(false);
+    });
+
+    it('should successfully retrieve a succeeded payment with services', async () => {
+      const paymentId = 'pay_succeeded_123';
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 6500,
+        currency: 'USD',
+        description: 'Payment for Order #1234',
+        transactionId: 'order_1234',
+        customer: {
+          email: 'john@example.com',
+          phone: '+1234567890',
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [
+          {
+            id: 'svc_001',
+            name: 'express_delivery',
+            description: 'Express delivery service',
+            quantity: 1,
+            price: 1500,
+            currency: 'USD',
+            sessionId: 'sess_123',
+            createdAt: '2025-11-15T10:00:00Z',
+          },
+        ],
+        status: 'S',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.getPayment(paymentId);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.status).toBe('S');
+      expect(result.services).toHaveLength(1);
+      expect(result.services[0].name).toBe('express_delivery');
+    });
+
+    it('should successfully retrieve a canceled payment', async () => {
+      const paymentId = 'pay_canceled_123';
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: 'Canceled payment',
+        transactionId: 'order_1234',
+        customer: {
+          email: 'john@example.com',
+          phone: null,
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: true,
+        services: [],
+        status: 'C',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.getPayment(paymentId);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.status).toBe('C');
+      expect(result.expired).toBe(true);
+    });
+
+    it('should handle 404 error when payment not found', async () => {
+      const paymentId = 'pay_not_found';
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(404, {
+          message: 'Payment not found',
+          code: 'NOT_FOUND',
+        });
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+
+      try {
+        await client.getPayment(paymentId);
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(APIError);
+        const apiError = error as APIError;
+        expect(apiError.status).toBe(404);
+        expect(apiError.data).toEqual({
+          message: 'Payment not found',
+          code: 'NOT_FOUND',
+        });
+      }
+    });
+
+    it('should handle unauthorized error', async () => {
+      const paymentId = 'pay_123';
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(401, {
+          message: 'Invalid API key',
+        });
+
+      const client = new PaymentGatewayClient({ apiKey: 'invalid-key', apiSecret: API_SECRET });
+
+      try {
+        await client.getPayment(paymentId);
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(APIError);
+        const apiError = error as APIError;
+        expect(apiError.status).toBe(401);
+      }
+    });
+
+    it('should use live environment correctly', async () => {
+      const paymentId = 'pay_live_123';
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 5000,
+        currency: 'USD',
+        description: null,
+        transactionId: 'order_1234',
+        customer: {
+          email: 'test@example.com',
+          phone: null,
+        },
+        createdAt: '2025-11-15T10:00:00Z',
+        expired: false,
+        services: [],
+        status: 'S',
+      };
+
+      nock('https://checkout.rdcard.net')
+        .get(`/api/v1/payments/${paymentId}`)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({
+        apiKey: API_KEY,
+        apiSecret: API_SECRET,
+        environment: 'live',
+      });
+
+      const result = await client.getPayment(paymentId);
       expect(result).toEqual(mockResponse);
     });
   });

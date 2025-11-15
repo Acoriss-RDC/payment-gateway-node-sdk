@@ -62,3 +62,32 @@ export interface PaymentSessionResponse {
   customer: CustomerInfo;
   createdAt: string; // ISO
 }
+
+export type PaymentStatus = 'P' | 'S' | 'C'; // P = Pending, S = Succeeded, C = Canceled
+
+export interface PaymentService {
+  id: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  price: number; // in cents
+  currency: string | null; // ISO 4217 or null
+  sessionId: string;
+  createdAt: string; // ISO date string
+}
+
+export interface RetrievePaymentResponse {
+  id: string;
+  amount: number; // in cents
+  currency: string; // ISO 4217
+  description: string | null;
+  transactionId: string;
+  customer: {
+    email: string | null;
+    phone: string | null;
+  };
+  createdAt: string; // ISO date string
+  expired: boolean;
+  services: PaymentService[];
+  status: PaymentStatus; // 'P' = Pending, 'S' = Succeeded, 'C' = Canceled
+}
