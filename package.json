@@ -1,0 +1,40 @@
+{
+  "name": "@acoriss/payment-gateway",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Acoriss Payment Gateway (sessions API)",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "prepare": "yarn build",
+    "prepublishOnly": "yarn clean && yarn build"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "payments",
+    "sdk",
+    "typescript",
+    "checkout",
+    "acoriss"
+  ],
+  "author": "Acoriss",
+  "dependencies": {
+    "axios": "^1.7.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  }
+}
