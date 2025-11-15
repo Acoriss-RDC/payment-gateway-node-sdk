@@ -80,7 +80,7 @@ export class PaymentGatewayClient {
   }
 
   /**
-   * Retrieves a payment by ID.
+   * Retrieves a payment session by ID.
    * Computes X-SIGNATURE using either the provided signer or default HMAC-SHA256(secret, paymentId).
    */
   async getPayment(paymentId: string, opts?: { signatureOverride?: string }): Promise<RetrievePaymentResponse> {
@@ -93,7 +93,7 @@ export class PaymentGatewayClient {
     }
 
     try {
-      const res = await this.http.get<RetrievePaymentResponse>(`/payments/${paymentId}`, {
+      const res = await this.http.get<RetrievePaymentResponse>(`/sessions/${paymentId}`, {
         headers: {
           'X-API-KEY': this.apiKey,
           'X-SIGNATURE': signature,

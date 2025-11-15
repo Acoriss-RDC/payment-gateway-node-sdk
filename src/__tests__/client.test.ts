@@ -386,7 +386,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .matchHeader('X-API-KEY', API_KEY)
         .matchHeader('X-SIGNATURE', expectedSignature)
         .reply(200, mockResponse);
@@ -420,7 +420,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .matchHeader('X-SIGNATURE', CUSTOM_SIGNATURE)
         .reply(200, mockResponse);
 
@@ -451,7 +451,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .matchHeader('X-SIGNATURE', OVERRIDE_SIGNATURE)
         .reply(200, mockResponse);
 
@@ -486,7 +486,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(200, mockResponse);
 
       const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
@@ -527,7 +527,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(200, mockResponse);
 
       const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
@@ -558,7 +558,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(200, mockResponse);
 
       const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
@@ -573,7 +573,7 @@ describe('PaymentGatewayClient', () => {
       const paymentId = 'pay_not_found';
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(404, {
           message: 'Payment not found',
           code: 'NOT_FOUND',
@@ -599,7 +599,7 @@ describe('PaymentGatewayClient', () => {
       const paymentId = 'pay_123';
 
       nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(401, {
           message: 'Invalid API key',
         });
@@ -635,7 +635,7 @@ describe('PaymentGatewayClient', () => {
       };
 
       nock('https://checkout.rdcard.net')
-        .get(`/api/v1/payments/${paymentId}`)
+        .get(`/api/v1/sessions/${paymentId}`)
         .reply(200, mockResponse);
 
       const client = new PaymentGatewayClient({
