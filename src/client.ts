@@ -18,13 +18,14 @@ const BASE_URLS: Record<Environment, string> = {
 class HmacSha256Signer implements Signer {
   constructor(private readonly secret: string) { }
   sign(body: string): string {
-    return crypto.createHmac('sha256', this.secret).update(body, 'utf8').digest('hex');
+    return crypto.createHmac('sha256', this.secret).update(this.secret, 'utf8').digest('hex');
   }
 }
 
 export class PaymentGatewayClient {
   private readonly http: AxiosInstance;
   private readonly apiKey: string;
+  private readonly apiSecret?: string;
   private readonly signer?: Signer;
 
   constructor(config: ClientConfig) {
@@ -32,6 +33,7 @@ export class PaymentGatewayClient {
     const baseURL = config.baseURL ?? BASE_URLS[environment];
 
     this.apiKey = config.apiKey;
+    this.apiSecret = config.apiSecret;
     this.signer = config.signer ?? (config.apiSecret ? new HmacSha256Signer(config.apiSecret) : undefined);
 
     this.http = axios.create({
@@ -45,13 +47,18 @@ export class PaymentGatewayClient {
 
   /**
    * Creates a payment session.
-   * Computes X-SIGNATURE using either the provided signer or default HMAC-SHA256(secret, rawBody).
+   * Computes X-SIGNATURE using HMAC-SHA256(apiSecret, apiSecret) or custom signer.
    */
   async createSession(payload: PaymentSessionRequest, opts?: { signatureOverride?: string }): Promise<PaymentSessionResponse> {
     const rawBody = JSON.stringify(payload);
-    const signature = opts?.signatureOverride ?? this.signer?.sign(rawBody);
+    const timestamp = Math.floor(Date.now() / 1000).toString();
 
-    if (!signature) {
+    let signature: string;
+    if (opts?.signatureOverride) {
+      signature = opts.signatureOverride;
+    } else if (this.signer) {
+      signature = this.signer.sign(rawBody);
+    } else {
       throw new Error(
         'No signature available. Provide apiSecret at client init, a custom signer, or pass signatureOverride.'
       );
@@ -62,6 +69,7 @@ export class PaymentGatewayClient {
         headers: {
           'X-API-KEY': this.apiKey,
           'X-SIGNATURE': signature,
+          'X-TIMESTAMP': timestamp,
         },
       });
       return res.data;
@@ -81,12 +89,17 @@ export class PaymentGatewayClient {
 
   /**
    * Retrieves a payment session by ID.
-   * Computes X-SIGNATURE using either the provided signer or default HMAC-SHA256(secret, paymentId).
+   * Computes X-SIGNATURE using HMAC-SHA256(apiSecret, apiSecret) or custom signer.
    */
   async getPayment(paymentId: string, opts?: { signatureOverride?: string }): Promise<RetrievePaymentResponse> {
-    const signature = opts?.signatureOverride ?? this.signer?.sign(paymentId);
+    const timestamp = Math.floor(Date.now() / 1000).toString();
 
-    if (!signature) {
+    let signature: string;
+    if (opts?.signatureOverride) {
+      signature = opts.signatureOverride;
+    } else if (this.signer) {
+      signature = this.signer.sign(paymentId);
+    } else {
       throw new Error(
         'No signature available. Provide apiSecret at client init, a custom signer, or pass signatureOverride.'
       );
@@ -97,6 +110,7 @@ export class PaymentGatewayClient {
         headers: {
           'X-API-KEY': this.apiKey,
           'X-SIGNATURE': signature,
+          'X-TIMESTAMP': timestamp,
         },
       });
       return res.data;

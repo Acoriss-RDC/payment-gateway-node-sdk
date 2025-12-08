@@ -58,7 +58,7 @@ Payment status values:
 
 ## Signature
 
-By default the SDK computes `X-SIGNATURE` as `HMAC-SHA256(JSON.stringify(body), apiSecret)` if you provide `apiSecret`.
+By default the SDK computes `X-SIGNATURE` as `HMAC-SHA256(apiSecret, apiSecret)` if you provide `apiSecret`.
 
 If your gateway uses a different signing algorithm, you can:
 

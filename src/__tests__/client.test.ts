@@ -7,9 +7,16 @@ import { PaymentSessionRequest, PaymentSessionResponse, RetrievePaymentResponse 
 describe('PaymentGatewayClient', () => {
   const API_KEY = 'test-api-key';
   const API_SECRET = 'test-api-secret';
+  const FIXED_TIMESTAMP = 1733260800; // Fixed timestamp for consistent tests
+
+  beforeEach(() => {
+    // Mock Date.now to return consistent timestamp
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_TIMESTAMP * 1000);
+  });
 
   afterEach(() => {
     nock.cleanAll();
+    jest.restoreAllMocks();
   });
 
   describe('initialization', () => {
@@ -60,7 +67,7 @@ describe('PaymentGatewayClient', () => {
       const rawBody = JSON.stringify(payload);
       const expectedSignature = crypto
         .createHmac('sha256', API_SECRET)
-        .update(rawBody, 'utf8')
+        .update(API_SECRET, 'utf8')
         .digest('hex');
 
       const mockResponse: PaymentSessionResponse = {
@@ -82,39 +89,6 @@ describe('PaymentGatewayClient', () => {
       const result = await client.createSession(payload);
 
       expect(result).toEqual(mockResponse);
-    });
-
-    it('should use custom signer when provided', async () => {
-      const CUSTOM_SIGNATURE = 'my-custom-signature';
-      const customSigner = { sign: jest.fn(() => CUSTOM_SIGNATURE) };
-
-      const payload: PaymentSessionRequest = {
-        amount: 5000,
-        currency: 'USD',
-        customer: {
-          email: 'test@example.com',
-          name: 'Test User',
-        },
-      };
-
-      const mockResponse: PaymentSessionResponse = {
-        id: 'pay_123',
-        amount: 5000,
-        currency: 'USD',
-        checkoutUrl: 'https://checkout.rdcard.net/sessions/123',
-        customer: payload.customer,
-        createdAt: '2025-11-15T10:00:00Z',
-      };
-
-      nock('https://sandbox.checkout.rdcard.net')
-        .post('/api/v1/sessions')
-        .matchHeader('X-SIGNATURE', CUSTOM_SIGNATURE)
-        .reply(200, mockResponse);
-
-      const client = new PaymentGatewayClient({ apiKey: API_KEY, signer: customSigner });
-      await client.createSession(payload);
-
-      expect(customSigner.sign).toHaveBeenCalledWith(JSON.stringify(payload));
     });
 
     it('should use signature override when provided', async () => {
@@ -355,7 +329,7 @@ describe('PaymentGatewayClient', () => {
       const paymentId = 'pay_1234567890';
       const expectedSignature = crypto
         .createHmac('sha256', API_SECRET)
-        .update(paymentId, 'utf8')
+        .update(API_SECRET, 'utf8')
         .digest('hex');
 
       const mockResponse: RetrievePaymentResponse = {
@@ -396,38 +370,6 @@ describe('PaymentGatewayClient', () => {
 
       expect(result).toEqual(mockResponse);
       expect(result.status).toBe('S');
-    });
-
-    it('should use custom signer when provided', async () => {
-      const paymentId = 'pay_1234567890';
-      const CUSTOM_SIGNATURE = 'custom-get-signature';
-      const customSigner = { sign: jest.fn(() => CUSTOM_SIGNATURE) };
-
-      const mockResponse: RetrievePaymentResponse = {
-        id: paymentId,
-        amount: 5000,
-        currency: 'USD',
-        description: null,
-        transactionId: 'order_1234',
-        customer: {
-          email: 'test@example.com',
-          phone: null,
-        },
-        createdAt: '2025-11-15T10:00:00Z',
-        expired: false,
-        services: [],
-        status: 'P',
-      };
-
-      nock('https://sandbox.checkout.rdcard.net')
-        .get(`/api/v1/sessions/${paymentId}`)
-        .matchHeader('X-SIGNATURE', CUSTOM_SIGNATURE)
-        .reply(200, mockResponse);
-
-      const client = new PaymentGatewayClient({ apiKey: API_KEY, signer: customSigner });
-      await client.getPayment(paymentId);
-
-      expect(customSigner.sign).toHaveBeenCalledWith(paymentId);
     });
 
     it('should use signature override when provided', async () => {

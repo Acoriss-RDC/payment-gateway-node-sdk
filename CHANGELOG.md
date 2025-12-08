@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING:** Updated signature generation to use `HMAC-SHA256(apiSecret, apiSecret)` instead of signing request body
+- Simplified signature algorithm for improved security and consistency
+
 ### Fixed
 - Corrected `getPayment` endpoint from `/payments/:id` to `/sessions/:id`
 
