@@ -1,6 +1,6 @@
 {
   "name": "@acoriss/payment-gateway",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "TypeScript SDK for Acoriss Payment Gateway (sessions API)",
   "license": "MIT",
   "main": "dist/index.js",

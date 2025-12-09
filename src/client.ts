@@ -18,7 +18,7 @@ const BASE_URLS: Record<Environment, string> = {
 class HmacSha256Signer implements Signer {
   constructor(private readonly secret: string) { }
   sign(body: string): string {
-    return crypto.createHmac('sha256', this.secret).update(this.secret, 'utf8').digest('hex');
+    return crypto.createHmac('sha256', this.secret).update(body, 'utf8').digest('hex');
   }
 }
 

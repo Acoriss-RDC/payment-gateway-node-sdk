@@ -5,13 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-- **BREAKING:** Updated signature generation to use `HMAC-SHA256(apiSecret, apiSecret)` instead of signing request body
-- Simplified signature algorithm for improved security and consistency
+## [0.1.3] - 2025-12-09
 
 ### Fixed
+- **BREAKING:** Fixed signature generation to properly use `HMAC-SHA256(body, apiSecret)` instead of incorrectly signing the secret itself
 - Corrected `getPayment` endpoint from `/payments/:id` to `/sessions/:id`
 
 ## [0.1.0] - 2025-11-15

@@ -67,7 +67,7 @@ describe('PaymentGatewayClient', () => {
       const rawBody = JSON.stringify(payload);
       const expectedSignature = crypto
         .createHmac('sha256', API_SECRET)
-        .update(API_SECRET, 'utf8')
+        .update(rawBody, 'utf8')
         .digest('hex');
 
       const mockResponse: PaymentSessionResponse = {
@@ -329,7 +329,7 @@ describe('PaymentGatewayClient', () => {
       const paymentId = 'pay_1234567890';
       const expectedSignature = crypto
         .createHmac('sha256', API_SECRET)
-        .update(API_SECRET, 'utf8')
+        .update(paymentId, 'utf8')
         .digest('hex');
 
       const mockResponse: RetrievePaymentResponse = {
