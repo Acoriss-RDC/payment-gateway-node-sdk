@@ -189,6 +189,45 @@ describe('PaymentGatewayClient', () => {
       expect(result.id).toBe('pay_1234567890');
     });
 
+    it('should successfully create a payment session with serviceId', async () => {
+      const payload: PaymentSessionRequest = {
+        amount: 2500,
+        currency: 'EUR',
+        customer: {
+          email: 'jane@example.com',
+          name: 'Jane Smith',
+        },
+        serviceId: 'SV123',
+        description: 'Premium subscription payment',
+        transactionId: 'txn_567890',
+      };
+
+      const mockResponse: PaymentSessionResponse = {
+        id: 'pay_servicetest123',
+        amount: 2500,
+        currency: 'EUR',
+        description: 'Premium subscription payment',
+        serviceId: 'SV123',
+        checkoutUrl: 'https://checkout.rdcard.net/sessions/service123',
+        customer: {
+          email: 'jane@example.com',
+          name: 'Jane Smith',
+        },
+        createdAt: '2025-12-16T15:30:00Z',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .post('/api/v1/sessions', JSON.stringify(payload))
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.createSession(payload);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.serviceId).toBe('SV123');
+      expect(result.id).toBe('pay_servicetest123');
+    });
+
     it('should handle API errors correctly', async () => {
       const payload: PaymentSessionRequest = {
         amount: 5000,
@@ -479,6 +518,37 @@ describe('PaymentGatewayClient', () => {
       expect(result.status).toBe('S');
       expect(result.services).toHaveLength(1);
       expect(result.services[0].name).toBe('express_delivery');
+    });
+
+    it('should successfully retrieve a payment with serviceId', async () => {
+      const paymentId = 'pay_service_123';
+      const mockResponse: RetrievePaymentResponse = {
+        id: paymentId,
+        amount: 2500,
+        currency: 'EUR',
+        description: 'Premium subscription payment',
+        serviceId: 'SV123',
+        transactionId: 'txn_567890',
+        customer: {
+          email: 'jane@example.com',
+          phone: null,
+        },
+        createdAt: '2025-12-16T15:30:00Z',
+        expired: false,
+        services: [],
+        status: 'S',
+      };
+
+      nock('https://sandbox.checkout.rdcard.net')
+        .get(`/api/v1/sessions/${paymentId}`)
+        .reply(200, mockResponse);
+
+      const client = new PaymentGatewayClient({ apiKey: API_KEY, apiSecret: API_SECRET });
+      const result = await client.getPayment(paymentId);
+
+      expect(result).toEqual(mockResponse);
+      expect(result.serviceId).toBe('SV123');
+      expect(result.status).toBe('S');
     });
 
     it('should successfully retrieve a canceled payment', async () => {

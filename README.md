@@ -28,6 +28,7 @@ const session = await client.createSession({
   currency: 'USD',
   customer: { email: 'john@example.com', name: 'John Doe', phone: '+1234567890' },
   description: 'Payment for Order #1234',
+  serviceId: 'SV001', // Optional: categorize the payment
   callbackUrl: 'https://example.com/api/callback',
   cancelUrl: 'https://example.com/cancel',
   successUrl: 'https://example.com/success',
@@ -55,6 +56,34 @@ Payment status values:
 - `'P'` - Pending: Payment is awaiting completion
 - `'S'` - Succeeded: Payment was successful
 - `'C'` - Canceled: Payment was canceled or failed
+
+## Service Categorization
+
+You can optionally categorize payments using the `serviceId` field. The `serviceId` is obtained from your Acoriss dashboard:
+
+```ts
+const session = await client.createSession({
+  amount: 2500,
+  currency: 'EUR',
+  customer: { email: 'jane@example.com', name: 'Jane Smith' },
+  serviceId: 'SV123', // Service ID from your dashboard
+  description: 'Premium subscription renewal',
+});
+
+// The serviceId is included in the response
+console.log('Service ID:', session.serviceId); // 'SV123'
+
+// And also when retrieving the payment later
+const payment = await client.getPayment(session.id);
+console.log('Service ID:', payment.serviceId); // 'SV123'
+```
+
+**How to get Service IDs:**
+1. Log into your Acoriss dashboard
+2. Navigate to Services or Payment Categories
+3. Copy the Service ID (format: `SV###`) for the service you want to associate with the payment
+
+This allows you to categorize payments for better organization, reporting, and analysis in your dashboard.
 
 ## Signature
 

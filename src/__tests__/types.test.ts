@@ -126,6 +126,23 @@ describe('Type definitions', () => {
       expect(request.customer.email).toBe('test@example.com');
     });
 
+    it('should create payment session request with serviceId', () => {
+      const request: PaymentSessionRequest = {
+        amount: 2500,
+        currency: 'EUR',
+        customer: {
+          email: 'jane@example.com',
+          name: 'Jane Smith',
+        },
+        serviceId: 'SV456',
+        description: 'Premium subscription payment',
+      };
+
+      expect(request.amount).toBe(2500);
+      expect(request.currency).toBe('EUR');
+      expect(request.serviceId).toBe('SV456');
+    });
+
     it('should create minimal payment session request', () => {
       const request: PaymentSessionRequest = {
         amount: 5000,
@@ -159,7 +176,27 @@ describe('Type definitions', () => {
 
       expect(response.id).toBe('pay_123');
       expect(response.checkoutUrl).toBe('https://checkout.rdcard.net/sessions/abc');
-      expect(response.createdAt).toBe('2025-11-15T10:00:00Z');
+    });
+
+    it('should create payment session response with serviceId', () => {
+      const response: PaymentSessionResponse = {
+        id: 'pay_service_456',
+        amount: 2500,
+        currency: 'EUR',
+        description: 'Premium subscription',
+        serviceId: 'SV789',
+        checkoutUrl: 'https://checkout.rdcard.net/sessions/def',
+        customer: {
+          email: 'jane@example.com',
+          name: 'Jane Smith',
+        },
+        createdAt: '2025-12-16T15:30:00Z',
+      };
+
+      expect(response.id).toBe('pay_service_456');
+      expect(response.serviceId).toBe('SV789');
+      expect(response.checkoutUrl).toBe('https://checkout.rdcard.net/sessions/def');
+      expect(response.createdAt).toBe('2025-12-16T15:30:00Z');
     });
   });
 

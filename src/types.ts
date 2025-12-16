@@ -48,6 +48,7 @@ export interface PaymentSessionRequest {
   cancelUrl?: string;
   successUrl?: string;
   transactionId?: string; // merchant reference
+  serviceId?: string; // optional service identifier to categorize payments
   services?: ServiceItem[];
   // Allow extra fields for forward-compatibility
   [key: string]: unknown;
@@ -58,6 +59,7 @@ export interface PaymentSessionResponse {
   amount: number;
   currency: string;
   description?: string;
+  serviceId?: string;
   checkoutUrl: string;
   customer: CustomerInfo;
   createdAt: string; // ISO
@@ -81,6 +83,7 @@ export interface RetrievePaymentResponse {
   amount: number; // in cents
   currency: string; // ISO 4217
   description: string | null;
+  serviceId?: string;
   transactionId: string;
   customer: {
     email: string | null;
